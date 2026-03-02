@@ -11,7 +11,6 @@
 
   <style>
     :root{
-      /* refined, less “punchy”, more archival */
       --bg0:#f7f0e3;
       --bg1:#efe3cf;
       --paper:#fffaf2;
@@ -19,8 +18,6 @@
       --muted:#6f5b44;
 
       --gold:#b8860b;
-      --gold2:#9a7509;
-
       --line: rgba(111,91,68,0.22);
       --card: rgba(255,255,255,0.68);
       --shadow: 0 10px 35px rgba(0,0,0,0.10);
@@ -59,7 +56,7 @@
     header{
       max-width: 1200px;
       margin: 0 auto;
-      padding: 18px 16px 10px;
+      padding: 14px 16px 6px; /* tightened so grid gets more height */
       text-align:center;
     }
 
@@ -84,7 +81,7 @@
       gap:10px;
       justify-content:center;
       flex-wrap:wrap;
-      margin: 10px 0 12px;
+      margin: 10px 0 10px;
     }
 
     .btn{
@@ -110,11 +107,11 @@
       background: rgba(184,134,11,0.14);
     }
 
-    /* MAIN: grid dominates */
+    /* MAIN: grid dominates (Option A) */
     .stage{
       max-width: 1200px;
       margin: 0 auto;
-      padding: 10px 16px 18px;
+      padding: 6px 16px 18px;
       display:flex;
       flex-direction:column;
       gap: 14px;
@@ -125,7 +122,7 @@
       border: 1px solid var(--line);
       border-radius: 18px;
       box-shadow: var(--shadow);
-      padding: 14px;
+      padding: 12px;
     }
 
     .grid-wrap{
@@ -141,11 +138,7 @@
       padding: 12px;
       background: rgba(0,0,0,0.04);
       border: 1px solid var(--line);
-      width: 100%;
-      max-width: 1100px;
-      /* Height bias: make it feel “full screen” */
-      max-height: calc(100vh - 270px);
-      aspect-ratio: 1 / 1;
+      /* size is set by JS so it is always a true square and as large as possible */
     }
     body.dark .grid{ background: rgba(255,255,255,0.04); }
 
@@ -160,8 +153,6 @@
       user-select:none;
       cursor:pointer;
       position:relative;
-
-      /* Responsive sizing */
       font-size: clamp(0.72rem, 1.0vw, 1.05rem);
       line-height: 1;
     }
@@ -210,7 +201,7 @@
       50%{ background: rgba(184,134,11,0.28); }
     }
 
-    /* Word list UNDER the grid */
+    /* Word list UNDER the grid (may scroll off screen) */
     .words-card{
       background: var(--card);
       border: 1px solid var(--line);
@@ -282,7 +273,7 @@
       bottom: 0;
       padding: 10px 12px 14px;
       background: linear-gradient(to top, rgba(0,0,0,0.08), rgba(0,0,0,0.00));
-      pointer-events: none; /* allow clicks only on the shell */
+      pointer-events: none;
     }
     body.dark .ticker-bar{
       background: linear-gradient(to top, rgba(0,0,0,0.35), rgba(0,0,0,0.00));
@@ -365,7 +356,7 @@
 </head>
 
 <body>
-  <header>
+  <header id="pageHeader">
     <h1>East African Food Word Search Puzzle</h1>
     <div class="controls">
       <button id="darkToggle" class="btn">🌞 Light / 🌙 Dark</button>
@@ -406,40 +397,38 @@
   <audio id="sndFound" src="assets/audio/found.mp3" preload="auto"></audio>
 
   <script>
-    const CATEGORIES = ["Street", "Staples", "Mains", "Sides"];
-
-    // Exact 30 dishes you provided
+    // No category labels in ticker anymore; dish notes describe what it is (street/staple/stew/side).
     const DISHES = [
-      { name: "Ugali", cat: "Staples", pron: "oo-GAH-lee", note: "Firm maize meal staple—built for stews, greens, and beans." },
-      { name: "Nyama Choma", cat: "Street", pron: "NYAH-mah CHOH-mah", note: "Grilled meat culture—smoke, salt, and gathering." },
-      { name: "Pilau", cat: "Staples", pron: "pee-LAU", note: "Spiced rice with aromatics—festival comfort on the coast." },
-      { name: "Chapati", cat: "Staples", pron: "chuh-PAH-tee", note: "Soft pan-flatbread—wrap, scoop, share." },
-      { name: "Mandazi", cat: "Street", pron: "mahn-DAH-zee", note: "Lightly sweet fried dough—tea-time favorite." },
-      { name: "Samosas", cat: "Street", pron: "suh-MOH-suhz", note: "Crisp pockets of spice—meat or vegetable fillings." },
-      { name: "Sukuma Wiki", cat: "Sides", pron: "soo-KOO-mah WEE-kee", note: "Sautéed greens—everyday fuel with onion and spice." },
-      { name: "Irio", cat: "Sides", pron: "EE-ree-oh", note: "Mashed peas/corn/potato/greens—hearty and soft." },
-      { name: "Githeri", cat: "Sides", pron: "gee-THEH-ree", note: "Beans and corn together—simple, strong, adaptable." },
-      { name: "Mishkaki", cat: "Street", pron: "meesh-KAH-kee", note: "Marinated skewers—grilled and bright with citrus." },
-      { name: "Wali wa Nazi", cat: "Staples", pron: "WAH-lee wah NAH-zee", note: "Coconut rice—fragrant, rich, coastal comfort." },
-      { name: "Chips Mayai", cat: "Street", pron: "cheeps mah-YAI", note: "Fries folded into an omelet—Tanzania’s street classic." },
-      { name: "Ndizi Kaanga", cat: "Sides", pron: "NDEE-zee kah-AHN-gah", note: "Fried plantain/banana—sweet-savory side." },
-      { name: "Mtori", cat: "Mains", pron: "m-TOH-ree", note: "Banana-and-meat stew—cooked down silky and deep." },
-      { name: "Zanzibar Pizza", cat: "Street", pron: "ZAN-zee-bar PEE-tsa", note: "Griddled folded dough—sweet or savory street artistry." },
-      { name: "Urojo", cat: "Street", pron: "oo-ROH-joh", note: "Tangy spiced Zanzibar mix—crunch, heat, and bright bite." },
-      { name: "Samaki wa Nazi", cat: "Mains", pron: "sah-MAH-kee wah NAH-zee", note: "Fish in coconut sauce—lime, spice, and sea-air comfort." },
-      { name: "Matoke", cat: "Staples", pron: "mah-TOH-kay", note: "Stewed green bananas—savory and satisfying." },
-      { name: "Rolex", cat: "Street", pron: "ROH-leks", note: "Chapati rolled with omelet—fast, filling, beloved." },
-      { name: "Luwombo", cat: "Mains", pron: "loo-WOHM-boh", note: "Banana-leaf steamed stew—aromatic and ceremonial." },
-      { name: "Groundnut Sauce", cat: "Mains", pron: "GROUND-nut", note: "Peanut-rich sauce—turns greens or starch into a feast." },
-      { name: "Injera", cat: "Staples", pron: "in-JAIR-uh", note: "Tangy sourdough flatbread—scoops stews, holds community." },
-      { name: "Doro Wat", cat: "Mains", pron: "DOH-roh WAHT", note: "Spiced chicken stew—bold warmth with injera." },
-      { name: "Shiro", cat: "Mains", pron: "SHEE-roh", note: "Chickpea stew—comfort food with deep spice." },
-      { name: "Tikil Gomen", cat: "Mains", pron: "TEE-keel goh-MEN", note: "Cabbage stew—gentle spice, cozy sweetness." },
-      { name: "Isombe", cat: "Mains", pron: "ee-SOHM-bay", note: "Cassava leaf stew—often with peanuts, earthy and rich." },
-      { name: "Kachumbari", cat: "Sides", pron: "kah-choom-BAH-ree", note: "Tomato-onion salad—citrus, chili, crunch." },
-      { name: "Maharagwe", cat: "Mains", pron: "mah-hah-RAHG-way", note: "Slow-cooked beans—coastal versions often use coconut." },
-      { name: "Kitumbua", cat: "Sides", pron: "kee-toom-BOO-ah", note: "Soft rice cakes—lightly sweet, perfect with tea." },
-      { name: "Viazi Karai", cat: "Street", pron: "vee-AH-zee kah-RAI", note: "Spiced battered potatoes—crispy outside, fluffy inside." }
+      { name: "Ugali", pron: "oo-GAH-lee", note: "A staple maize meal—made to hold stew, greens, and beans." },
+      { name: "Nyama Choma", pron: "NYAH-mah CHOH-mah", note: "Street grilling culture—smoke, salt, and gathering." },
+      { name: "Pilau", pron: "pee-LAU", note: "A spiced rice staple—aromatic and celebratory." },
+      { name: "Chapati", pron: "chuh-PAH-tee", note: "A staple flatbread—wrap, scoop, share." },
+      { name: "Mandazi", pron: "mahn-DAH-zee", note: "A sweet street snack—fried dough with tea-time energy." },
+      { name: "Samosas", pron: "suh-MOH-suhz", note: "Street snack pockets—crisp pastry with spiced fillings." },
+      { name: "Sukuma Wiki", pron: "soo-KOO-mah WEE-kee", note: "A greens side—sautéed and built for everyday meals." },
+      { name: "Irio", pron: "EE-ree-oh", note: "A hearty side mash—peas/corn/potato/greens together." },
+      { name: "Githeri", pron: "gee-THEH-ree", note: "A simple side—beans and corn, endlessly adaptable." },
+      { name: "Mishkaki", pron: "meesh-KAH-kee", note: "Street skewers—marinated, grilled, bright with citrus." },
+      { name: "Wali wa Nazi", pron: "WAH-lee wah NAH-zee", note: "A coconut rice staple—fragrant and coastal." },
+      { name: "Chips Mayai", pron: "cheeps mah-YAI", note: "Street comfort—fries folded into an omelet." },
+      { name: "Ndizi Kaanga", pron: "NDEE-zee kah-AHN-gah", note: "A sweet-savory side—fried plantain/banana." },
+      { name: "Mtori", pron: "m-TOH-ree", note: "A stew—banana and meat cooked down silky and deep." },
+      { name: "Zanzibar Pizza", pron: "ZAN-zee-bar PEE-tsa", note: "Street artistry—folded dough griddled sweet or savory." },
+      { name: "Urojo", pron: "oo-ROH-joh", note: "A street bowl—tangy Zanzibar mix with crunch and heat." },
+      { name: "Samaki wa Nazi", pron: "sah-MAH-kee wah NAH-zee", note: "A coconut fish dish—lime, spice, and coastal comfort." },
+      { name: "Matoke", pron: "mah-TOH-kay", note: "A staple—stewed green bananas, savory and satisfying." },
+      { name: "Rolex", pron: "ROH-leks", note: "Street classic—chapati rolled with omelet and veg." },
+      { name: "Luwombo", pron: "loo-WOHM-boh", note: "A banana-leaf stew—steamed, aromatic, ceremonial." },
+      { name: "Groundnut Sauce", pron: "GROUND-nut", note: "A rich sauce—peanut depth that transforms a plate." },
+      { name: "Injera", pron: "in-JAIR-uh", note: "A sourdough staple—used to scoop and share stews." },
+      { name: "Doro Wat", pron: "DOH-roh WAHT", note: "A chicken stew—bold spice and deep warmth." },
+      { name: "Shiro", pron: "SHEE-roh", note: "A chickpea stew—comfort food with layered spice." },
+      { name: "Tikil Gomen", pron: "TEE-keel goh-MEN", note: "A cabbage stew—gentle spice, cozy sweetness." },
+      { name: "Isombe", pron: "ee-SOHM-bay", note: "A cassava-leaf stew—earthy, rich, often peanut-forward." },
+      { name: "Kachumbari", pron: "kah-choom-BAH-ree", note: "A fresh side—tomato, onion, citrus, chili crunch." },
+      { name: "Maharagwe", pron: "mah-hah-RAHG-way", note: "A beans dish—slow-cooked, sometimes coconut-style." },
+      { name: "Kitumbua", pron: "kee-toom-BOO-ah", note: "A tea-time side—soft rice cakes, lightly sweet." },
+      { name: "Viazi Karai", pron: "vee-AH-zee kah-RAI", note: "Street potatoes—spiced batter, crisp outside, fluffy inside." }
     ];
 
     const DIRS = [[1,0],[0,1],[1,1],[-1,0],[0,-1],[-1,-1],[1,-1],[-1,1]];
@@ -481,6 +470,10 @@
       return name.toUpperCase().replace(/[^A-Z]/g,"");
     }
 
+    function setProgress(){
+      $("#progress").textContent = `${foundCount}/${DISHES.length} found`;
+    }
+
     function buildWordList(){
       const ul = $("#wordList");
       ul.innerHTML = "";
@@ -490,10 +483,6 @@
         li.textContent = d.name;
         ul.appendChild(li);
       });
-    }
-
-    function setProgress(){
-      $("#progress").textContent = `${foundCount}/${DISHES.length} found`;
     }
 
     function markWordFound(key){
@@ -666,7 +655,7 @@
       alert(`Hint ${hintsUsed}/3: Look around the highlighted letter!`);
     }
 
-    /* TICKER */
+    /* TICKER (no category labels) */
     function isReducedMotion(){
       return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     }
@@ -698,7 +687,7 @@
     }
 
     function formatTicker(d){
-      return `[${d.cat}] ${d.name} — ${d.pron} — ${d.note}`;
+      return `${d.name} — ${d.pron} — ${d.note}`;
     }
 
     function setTickerPaused(paused){
@@ -748,6 +737,32 @@
       });
     }
 
+    /* BOARD SIZE: make grid a true square and as big as possible (Option A) */
+    function fitBoard(){
+      const gridEl = $("#grid");
+      const headerEl = $("#pageHeader");
+      const tickerEl = $("#tickerShell");
+      if (!gridEl || !headerEl || !tickerEl) return;
+
+      const margin = 32; // outer padding allowance
+      const viewportW = window.innerWidth;
+      const viewportH = window.innerHeight;
+
+      const headerH = headerEl.getBoundingClientRect().height;
+      const tickerH = tickerEl.getBoundingClientRect().height + 26; // include ticker padding
+
+      // Space we can use for the board if we let the word list scroll
+      const availableH = Math.max(260, viewportH - headerH - tickerH - margin);
+
+      // Width is limited by stage max-width, but viewportW is enough for sizing target
+      const availableW = Math.max(280, Math.min(1200, viewportW) - margin);
+
+      const boardSize = Math.floor(Math.min(availableW, availableH));
+
+      gridEl.style.width = boardSize + "px";
+      gridEl.style.height = boardSize + "px";
+    }
+
     /* GENERATION: tries to guarantee placement */
     function generateBoard(){
       const words = [...DISHES].map(d => dishKey(d.name));
@@ -756,17 +771,14 @@
       for (let s=18; s<=20; s++){
         size = s;
 
-        for (let attempt=0; attempt<40; attempt++){
+        for (let attempt=0; attempt<50; attempt++){
           grid = Array.from({length:size}, ()=>Array.from({length:size}, ()=>""));
           placed = [];
           let ok = true;
 
           for (const w of words){
             const cells = tryPlace(w);
-            if (!cells){
-              ok = false;
-              break;
-            }
+            if (!cells){ ok = false; break; }
             placed.push({ key: w, cells, found:false });
           }
 
@@ -796,6 +808,9 @@
       setProgress();
       setupGridEvents();
       startTicker();
+
+      // Fit AFTER render (so sizes are known)
+      fitBoard();
     }
 
     document.addEventListener("DOMContentLoaded", ()=>{
@@ -807,9 +822,12 @@
       document.getElementById("darkToggle").onclick = ()=>{
         document.body.classList.toggle("dark");
         document.getElementById("darkToggle").classList.toggle("active");
+        // re-fit because fonts/metrics can shift slightly in dark mode
+        setTimeout(fitBoard, 0);
       };
 
       resetGame();
+      window.addEventListener("resize", ()=>fitBoard());
     });
   </script>
 </body>
