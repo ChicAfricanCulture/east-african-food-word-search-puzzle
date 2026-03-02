@@ -50,13 +50,13 @@
       color:var(--ink);
       background: radial-gradient(1200px 800px at 20% 10%, var(--bg0), var(--bg1));
       transition: background 0.25s ease, color 0.25s ease;
-      padding-bottom: 92px; /* space for sticky ticker */
+      padding-bottom: 92px; /* sticky ticker space */
     }
 
     header{
       max-width: 1200px;
       margin: 0 auto;
-      padding: 14px 16px 6px; /* tightened so grid gets more height */
+      padding: 14px 16px 6px;
       text-align:center;
     }
 
@@ -107,7 +107,6 @@
       background: rgba(184,134,11,0.14);
     }
 
-    /* MAIN: grid dominates (Option A) */
     .stage{
       max-width: 1200px;
       margin: 0 auto;
@@ -138,7 +137,6 @@
       padding: 12px;
       background: rgba(0,0,0,0.04);
       border: 1px solid var(--line);
-      /* size is set by JS so it is always a true square and as large as possible */
     }
     body.dark .grid{ background: rgba(255,255,255,0.04); }
 
@@ -193,15 +191,12 @@
       0%,100%{ background: rgba(255,255,255,0.72); }
       50%{ background: rgba(184,134,11,0.30); }
     }
-    body.dark .hint-active{
-      animation: hintDark 900ms ease-in-out;
-    }
+    body.dark .hint-active{ animation: hintDark 900ms ease-in-out; }
     @keyframes hintDark{
       0%,100%{ background: rgba(0,0,0,0.22); }
       50%{ background: rgba(184,134,11,0.28); }
     }
 
-    /* Word list UNDER the grid (may scroll off screen) */
     .words-card{
       background: var(--card);
       border: 1px solid var(--line);
@@ -265,7 +260,7 @@
       text-decoration: line-through;
     }
 
-    /* Sticky ticker (subtle, blends) */
+    /* Sticky ticker */
     .ticker-bar{
       position: fixed;
       left: 0;
@@ -316,12 +311,10 @@
       will-change: transform, opacity;
     }
 
+    /* We keep the hint for accessibility, but hide it visually */
     .ticker-hint{
-      font-weight: 800;
-      opacity: 0.75;
-      white-space: nowrap;
+      display: none;
     }
-    .ticker-shell.paused .ticker-hint{ opacity: 1; }
 
     .ticker-enter{ animation: enter 360ms ease-out forwards; }
     .ticker-exit{ animation: exit 360ms ease-in forwards; }
@@ -333,6 +326,28 @@
     @keyframes exit{
       from{ transform: translateX(0); opacity:1; }
       to{ transform: translateX(-10px); opacity:0; }
+    }
+
+    /* Mobile: stack label above ticker text and allow 2 lines */
+    @media (max-width: 520px){
+      .ticker-shell{
+        grid-template-columns: 1fr;
+        gap: 6px;
+        align-items: start;
+      }
+      .ticker-label{
+        font-size: 0.92rem;
+      }
+      .ticker-stage{
+        min-height: 2.6rem;
+      }
+      .ticker-item{
+        white-space: normal;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
     }
 
     footer{
@@ -363,7 +378,7 @@
       <button id="hintBtn" class="btn">💡 Hint</button>
       <button id="resetBtn" class="btn">🔄 Reset</button>
     </div>
-    <p class="sub">Find the dishes in the grid. Words can appear forward, backward, or diagonal. Tap the ticker to pause.</p>
+    <p class="sub">Find the dishes in the grid. Words can appear forward, backward, or diagonal.</p>
   </header>
 
   <main class="stage">
@@ -382,9 +397,9 @@
     </section>
   </main>
 
-  <section class="ticker-bar" aria-label="Sankofa Kitchen Food Notes">
+  <section class="ticker-bar" aria-label="Sankofa Kitchen Notes">
     <div class="ticker-shell" id="tickerShell" role="button" tabindex="0" aria-pressed="false">
-      <div class="ticker-label">Sankofa Kitchen Food Notes</div>
+      <div class="ticker-label">Sankofa Kitchen Notes</div>
       <div class="ticker-stage">
         <div class="ticker-item" id="tickerItem"></div>
       </div>
@@ -397,7 +412,6 @@
   <audio id="sndFound" src="assets/audio/found.mp3" preload="auto"></audio>
 
   <script>
-    // No category labels in ticker anymore; dish notes describe what it is (street/staple/stew/side).
     const DISHES = [
       { name: "Ugali", pron: "oo-GAH-lee", note: "A staple maize meal—made to hold stew, greens, and beans." },
       { name: "Nyama Choma", pron: "NYAH-mah CHOH-mah", note: "Street grilling culture—smoke, salt, and gathering." },
@@ -496,7 +510,7 @@
       const L = word.length;
 
       for (const [dr,dc] of dirs){
-        for (let attempt=0; attempt<220; attempt++){
+        for (let attempt=0; attempt<240; attempt++){
           let r0, c0;
 
           if (dr === 1) r0 = rand(0, size - L);
@@ -655,7 +669,7 @@
       alert(`Hint ${hintsUsed}/3: Look around the highlighted letter!`);
     }
 
-    /* TICKER (no category labels) */
+    /* TICKER */
     function isReducedMotion(){
       return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     }
@@ -695,7 +709,7 @@
       const shell = $("#tickerShell");
       shell.classList.toggle("paused", paused);
       shell.setAttribute("aria-pressed", paused ? "true" : "false");
-      $("#tickerHint").textContent = paused ? "Paused — tap to resume" : "Tap to pause";
+      // hint is hidden visually but we keep aria state via aria-pressed
     }
 
     function runTickerStep(){
@@ -737,33 +751,38 @@
       });
     }
 
-    /* BOARD SIZE: make grid a true square and as big as possible (Option A) */
+    /* BOARD SIZE:
+       - Mobile: fit to smallest dimension (max size without scroll issues)
+       - Desktop/laptop: fill available WIDTH (big board), allow page to scroll
+    */
     function fitBoard(){
       const gridEl = $("#grid");
-      const headerEl = $("#pageHeader");
-      const tickerEl = $("#tickerShell");
-      if (!gridEl || !headerEl || !tickerEl) return;
+      const margin = 32;
 
-      const margin = 32; // outer padding allowance
       const viewportW = window.innerWidth;
       const viewportH = window.innerHeight;
 
-      const headerH = headerEl.getBoundingClientRect().height;
-      const tickerH = tickerEl.getBoundingClientRect().height + 26; // include ticker padding
-
-      // Space we can use for the board if we let the word list scroll
-      const availableH = Math.max(260, viewportH - headerH - tickerH - margin);
-
-      // Width is limited by stage max-width, but viewportW is enough for sizing target
       const availableW = Math.max(280, Math.min(1200, viewportW) - margin);
 
-      const boardSize = Math.floor(Math.min(availableW, availableH));
+      const isMobile = window.matchMedia("(max-width: 700px)").matches;
 
+      if (isMobile){
+        const headerH = $("#pageHeader")?.getBoundingClientRect().height || 0;
+        const tickerH = $("#tickerShell")?.getBoundingClientRect().height || 0;
+        const availableH = Math.max(260, viewportH - headerH - tickerH - 46);
+        const boardSize = Math.floor(Math.min(availableW, availableH));
+        gridEl.style.width = boardSize + "px";
+        gridEl.style.height = boardSize + "px";
+        return;
+      }
+
+      // Desktop: make it BIG (width-driven), even if it causes vertical scroll.
+      const boardSize = Math.floor(availableW);
       gridEl.style.width = boardSize + "px";
       gridEl.style.height = boardSize + "px";
     }
 
-    /* GENERATION: tries to guarantee placement */
+    /* GENERATION */
     function generateBoard(){
       const words = [...DISHES].map(d => dishKey(d.name));
       words.sort((a,b)=>b.length-a.length);
@@ -809,7 +828,6 @@
       setupGridEvents();
       startTicker();
 
-      // Fit AFTER render (so sizes are known)
       fitBoard();
     }
 
@@ -822,12 +840,11 @@
       document.getElementById("darkToggle").onclick = ()=>{
         document.body.classList.toggle("dark");
         document.getElementById("darkToggle").classList.toggle("active");
-        // re-fit because fonts/metrics can shift slightly in dark mode
         setTimeout(fitBoard, 0);
       };
 
       resetGame();
-      window.addEventListener("resize", ()=>fitBoard());
+      window.addEventListener("resize", fitBoard);
     });
   </script>
 </body>
