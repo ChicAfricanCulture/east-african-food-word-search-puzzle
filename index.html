@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>East African Cusine Word Search Puzzle</title>
+  <title>East African Food Word Search Puzzle</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -107,6 +107,7 @@
       background: rgba(184,134,11,0.14);
     }
 
+    /* ===== Layout ===== */
     .stage{
       max-width: 1200px;
       margin: 0 auto;
@@ -114,6 +115,16 @@
       display:flex;
       flex-direction:column;
       gap: 14px;
+    }
+
+    /* Desktop/laptop: grid + word list side-by-side */
+    @media (min-width: 980px){
+      .stage{
+        display:grid;
+        grid-template-columns: 1fr 320px; /* narrow list panel */
+        gap: 14px;
+        align-items: start;
+      }
     }
 
     .grid-card{
@@ -197,33 +208,23 @@
       50%{ background: rgba(184,134,11,0.28); }
     }
 
+    /* ===== Word list panel (no heading) ===== */
     .words-card{
       background: var(--card);
       border: 1px solid var(--line);
       border-radius: 18px;
       box-shadow: var(--shadow2);
-      padding: 14px;
+      padding: 12px;
     }
 
-    .words-head{
-      display:flex;
-      justify-content:space-between;
-      align-items:baseline;
-      gap: 12px;
-      flex-wrap:wrap;
-      margin-bottom: 10px;
-    }
-
-    .words-title{
-      font-family:'Playfair Display',serif;
-      margin:0;
-      font-size: 1.25rem;
-      color: var(--muted);
-    }
-
-    .progress{
-      font-weight: 800;
-      opacity: 0.9;
+    /* Desktop: make list panel sticky and internally scrollable */
+    @media (min-width: 980px){
+      .words-card{
+        position: sticky;
+        top: 12px;
+        max-height: calc(100vh - 12px - 92px); /* keep clear of sticky ticker */
+        overflow: auto;
+      }
     }
 
     .word-list{
@@ -231,15 +232,20 @@
       margin:0;
       padding:0;
       display:grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr)); /* B: two columns */
       gap: 8px;
     }
 
-    @media (max-width: 900px){
-      .word-list{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    /* Mobile/tablet: keep it comfortable */
+    @media (max-width: 979px){
+      .word-list{
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
     }
     @media (max-width: 640px){
-      .word-list{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .word-list{
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
     }
 
     .word-list li{
@@ -250,6 +256,9 @@
       font-weight: 900;
       letter-spacing: 0.1px;
       transition: background 0.15s ease, border-color 0.15s ease;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     body.dark .word-list li{ background: rgba(0,0,0,0.16); }
 
@@ -260,7 +269,16 @@
       text-decoration: line-through;
     }
 
-    /* Sticky ticker */
+    /* Progress is useful; keep it small and unobtrusive */
+    .progress{
+      font-weight: 900;
+      opacity: 0.85;
+      color: var(--muted);
+      text-align: right;
+      margin: 0 0 10px;
+    }
+
+    /* ===== Sticky ticker ===== */
     .ticker-bar{
       position: fixed;
       left: 0;
@@ -279,7 +297,7 @@
       margin: 0 auto;
       pointer-events: auto;
       display:grid;
-      grid-template-columns: auto 1fr auto;
+      grid-template-columns: auto 1fr;
       gap: 10px;
       align-items:center;
 
@@ -309,11 +327,6 @@
       font-weight: 800;
       white-space: nowrap;
       will-change: transform, opacity;
-    }
-
-    /* We keep the hint for accessibility, but hide it visually */
-    .ticker-hint{
-      display: none;
     }
 
     .ticker-enter{ animation: enter 360ms ease-out forwards; }
@@ -372,7 +385,7 @@
 
 <body>
   <header id="pageHeader">
-    <h1>East African Cusine  Word Search Puzzle</h1>
+    <h1>East African Food Word Search Puzzle</h1>
     <div class="controls">
       <button id="darkToggle" class="btn">🌞 Light / 🌙 Dark</button>
       <button id="hintBtn" class="btn">💡 Hint</button>
@@ -389,10 +402,7 @@
     </section>
 
     <section class="words-card" aria-label="Words to find">
-      <div class="words-head">
-        <h2 class="words-title">Words to Find</h2>
-        <div class="progress" id="progress">0/30 found</div>
-      </div>
+      <div class="progress" id="progress">0/30 found</div>
       <ul class="word-list" id="wordList"></ul>
     </section>
   </main>
@@ -403,11 +413,10 @@
       <div class="ticker-stage">
         <div class="ticker-item" id="tickerItem"></div>
       </div>
-      <div class="ticker-hint" id="tickerHint">Tap to pause</div>
     </div>
   </section>
 
-  <footer>This project is part of [The African Gourmet](https://www.theafricangourmet.com) ecosphere.</footer>
+  <footer>Before you cook it, learn to say it.</footer>
 
   <audio id="sndFound" src="assets/audio/found.mp3" preload="auto"></audio>
 
@@ -494,6 +503,7 @@
       DISHES.forEach(d=>{
         const li = document.createElement("li");
         li.dataset.key = dishKey(d.name);
+        li.title = d.name;
         li.textContent = d.name;
         ul.appendChild(li);
       });
@@ -510,7 +520,7 @@
       const L = word.length;
 
       for (const [dr,dc] of dirs){
-        for (let attempt=0; attempt<240; attempt++){
+        for (let attempt=0; attempt<260; attempt++){
           let r0, c0;
 
           if (dr === 1) r0 = rand(0, size - L);
@@ -639,7 +649,6 @@
         });
 
         markWordFound(match.key);
-
         tickerLastFoundKey = match.key;
         tickerBoost = 3;
       } else {
@@ -707,9 +716,7 @@
     function setTickerPaused(paused){
       tickerPaused = paused;
       const shell = $("#tickerShell");
-      shell.classList.toggle("paused", paused);
       shell.setAttribute("aria-pressed", paused ? "true" : "false");
-      // hint is hidden visually but we keep aria state via aria-pressed
     }
 
     function runTickerStep(){
@@ -752,23 +759,22 @@
     }
 
     /* BOARD SIZE:
-       - Mobile: fit to smallest dimension (max size without scroll issues)
-       - Desktop/laptop: fill available WIDTH (big board), allow page to scroll
+       - Mobile: fit to smallest dimension (no awkward scrolling)
+       - Desktop: fit to available left-column width AND viewport height (so it stays “one page” with the list)
     */
     function fitBoard(){
       const gridEl = $("#grid");
-      const margin = 32;
+      const margin = 28;
 
       const viewportW = window.innerWidth;
       const viewportH = window.innerHeight;
 
-      const availableW = Math.max(280, Math.min(1200, viewportW) - margin);
+      const isDesktop = window.matchMedia("(min-width: 980px)").matches;
 
-      const isMobile = window.matchMedia("(max-width: 700px)").matches;
-
-      if (isMobile){
+      if (!isDesktop){
         const headerH = $("#pageHeader")?.getBoundingClientRect().height || 0;
         const tickerH = $("#tickerShell")?.getBoundingClientRect().height || 0;
+        const availableW = Math.max(280, Math.min(1200, viewportW) - margin);
         const availableH = Math.max(260, viewportH - headerH - tickerH - 46);
         const boardSize = Math.floor(Math.min(availableW, availableH));
         gridEl.style.width = boardSize + "px";
@@ -776,8 +782,23 @@
         return;
       }
 
-      // Desktop: make it BIG (width-driven), even if it causes vertical scroll.
-      const boardSize = Math.floor(availableW);
+      const stage = document.querySelector(".stage");
+      const wordsCard = document.querySelector(".words-card");
+      if (!stage || !wordsCard){
+        return;
+      }
+
+      const stageRect = stage.getBoundingClientRect();
+      const wordsRect = wordsCard.getBoundingClientRect();
+
+      const gap = 14;
+      const leftColumnW = Math.max(420, stageRect.width - wordsRect.width - gap);
+
+      const headerH = $("#pageHeader")?.getBoundingClientRect().height || 0;
+      const tickerH = $("#tickerShell")?.getBoundingClientRect().height || 0;
+      const availableH = Math.max(360, viewportH - headerH - tickerH - 36);
+
+      const boardSize = Math.floor(Math.min(leftColumnW, availableH));
       gridEl.style.width = boardSize + "px";
       gridEl.style.height = boardSize + "px";
     }
@@ -790,7 +811,7 @@
       for (let s=18; s<=20; s++){
         size = s;
 
-        for (let attempt=0; attempt<50; attempt++){
+        for (let attempt=0; attempt<55; attempt++){
           grid = Array.from({length:size}, ()=>Array.from({length:size}, ()=>""));
           placed = [];
           let ok = true;
