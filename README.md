@@ -1,8 +1,8 @@
-# East African Food Word Search Puzzle
+# East African Cuisine Word Search Puzzle
 
 ## A Sankofa Kitchen Cultural Heritage Project
 
-The **East African Food Word Search Puzzle** is part of the Sankofa Kitchen initiative — a digital cultural heritage project dedicated to exploring African foodways beyond the kitchen.
+The **East African Cuisine Word Search Puzzle** is part of the Sankofa Kitchen initiative — a digital cultural heritage project dedicated to exploring African foodways beyond the kitchen.
 
 This interactive experience invites participants to slow down, look closely, and learn the names of dishes that carry histories of migration, trade, memory, and everyday life across East Africa.
 
